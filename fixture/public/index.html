@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pulseboard Fixture — Auditoria Controlada</title>
+    <meta name="description" content="Site-fixture interno do AI Web Auditor com falhas determinísticas e seguras." />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Pulseboard início"><span class="brand-mark">P</span>Pulseboard</a>
+      <button class="menu-trigger" type="button" aria-expanded="false" aria-controls="main-nav">Menu</button>
+      <nav id="main-nav" aria-label="Navegação principal">
+        <a href="/">Visão geral</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/broken">Documentação</a>
+        <a href="/login">Entrar</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="eyebrow">Ambiente de validação controlada</p>
+        <h1 id="hero-title">Dados operacionais que deveriam inspirar confiança.</h1>
+        <p class="low-contrast">Este parágrafo foi propositalmente criado com contraste insuficiente para validar a detecção automática de acessibilidade.</p>
+        <div class="hero-actions">
+          <button id="no-action" class="primary" type="button">Gerar diagnóstico</button>
+          <button id="open-modal" class="secondary" type="button">Abrir detalhes</button>
+        </div>
+      </section>
+
+      <section class="metric-grid" aria-label="Indicadores de exemplo">
+        <article><span>Disponibilidade</span><strong>99,92%</strong><small>+0,4% no período</small></article>
+        <article><span>Latência P95</span><strong>428 ms</strong><small>Acima do orçamento</small></article>
+        <article><span>Erros</span><strong>17</strong><small>3 novos hoje</small></article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel">
+          <p class="eyebrow">Busca funcional</p>
+          <h2>Encontre um evento</h2>
+          <form id="search-form">
+            <input id="unlabelled-search" name="q" required placeholder="Digite um termo" autocomplete="off" />
+            <button type="submit">Pesquisar</button>
+          </form>
+          <p id="search-status" role="status">Nenhuma busca executada.</p>
+        </article>
+
+        <article class="panel">
+          <p class="eyebrow">Evidência visual</p>
+          <h2>Imagem sem texto alternativo</h2>
+          <img class="signal-image" src="/signal.svg" />
+        </article>
+      </section>
+
+      <section class="overflow-demo" aria-label="Tabela propositalmente larga">
+        <h2>Eventos recentes</h2>
+        <div class="wide-table" role="table" aria-label="Eventos recentes">
+          <span>INC-1042</span><span>Checkout API</span><span>Produção</span><span>Elevado</span><span>Há 4 minutos</span>
+        </div>
+      </section>
+    </main>
+
+    <div id="details-modal" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <button id="close-modal" class="icon-button" type="button" aria-label="Fechar detalhes">×</button>
+        <p class="eyebrow">Componente funcional</p>
+        <h2 id="modal-title">Detalhes do incidente</h2>
+        <p>Este modal abre, fecha por botão, Escape e clique externo para fornecer um caso positivo ao auditor.</p>
+        <a href="/dashboard">Abrir dashboard</a>
+      </section>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

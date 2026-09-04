@@ -1,0 +1,51 @@
+<svg width="1280" height="360" viewBox="0 0 1280 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="0.52" stop-color="#0E1730"/>
+      <stop offset="1" stop-color="#111B38"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="176" y1="88" x2="1024" y2="264" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C6BFF"/>
+      <stop offset="0.52" stop-color="#45E3A3"/>
+      <stop offset="1" stop-color="#49B6FF"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1008 92) rotate(135) scale(362 286)">
+      <stop stop-color="#6A63FF" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#6A63FF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="360" rx="28" fill="url(#bg)"/>
+  <rect x="1" y="1" width="1278" height="358" rx="27" stroke="#24304E"/>
+  <circle cx="1008" cy="92" r="286" fill="url(#glow)"/>
+
+  <g opacity="0.28">
+    <path d="M812 70C930 88 1031 154 1144 184C1184 194 1226 200 1268 204" stroke="url(#accent)" stroke-width="2"/>
+    <path d="M760 126C882 139 968 206 1080 239C1136 255 1202 261 1262 265" stroke="url(#accent)" stroke-width="2"/>
+    <path d="M738 204C838 216 905 273 1017 298" stroke="url(#accent)" stroke-width="2"/>
+  </g>
+
+  <rect x="78" y="68" width="156" height="34" rx="17" fill="#141F3F"/>
+  <text x="108" y="90" fill="#9BA7C7" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600">SaaS Audit Platform</text>
+
+  <text x="78" y="154" fill="#F6FAFF" font-family="Segoe UI, Arial, sans-serif" font-size="52" font-weight="700">AI Web Auditor</text>
+  <text x="78" y="196" fill="#53E0A1" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">Real website audits, live progress, executive AI and premium PDF reporting.</text>
+
+  <text x="78" y="238" fill="#98A4C5" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400">
+    React + Vite, Spring Boot + JWT, PostgreSQL, Playwright, Lighthouse, axe-core and OpenAI.
+  </text>
+
+  <g>
+    <rect x="78" y="278" width="202" height="42" rx="21" fill="#1A2750"/>
+    <text x="107" y="304" fill="#F6FAFF" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600">Live audit pipeline</text>
+  </g>
+  <g>
+    <rect x="298" y="278" width="226" height="42" rx="21" fill="#172B2B"/>
+    <text x="329" y="304" fill="#E9FFF6" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600">Lighthouse + axe-core</text>
+  </g>
+  <g>
+    <rect x="542" y="278" width="224" height="42" rx="21" fill="#2A223D"/>
+    <text x="574" y="304" fill="#F5F1FF" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="600">Executive PDF exports</text>
+  </g>
+</svg>

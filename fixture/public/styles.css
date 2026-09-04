@@ -1,0 +1,58 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #07111f;
+  color: #e8f3ff;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 80% 0%, #0c2c45 0, transparent 35%), #07111f; }
+a { color: #8ddcff; }
+button, input { font: inherit; }
+button, a { min-height: 44px; }
+.topbar { min-height: 72px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1d344a; background: rgba(7, 17, 31, .9); }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: #f6fbff; font-weight: 750; text-decoration: none; }
+.brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #24c6ef; border-radius: 12px; color: #24c6ef; box-shadow: inset 0 0 14px rgba(36, 198, 239, .2); }
+nav { display: flex; align-items: center; gap: 24px; }
+nav a { display: inline-flex; align-items: center; color: #b9c9d8; text-decoration: none; }
+.menu-trigger { display: none; }
+main { width: min(1160px, 90vw); margin: 0 auto; padding: 72px 0 96px; }
+.hero { max-width: 780px; padding-bottom: 56px; }
+.hero.compact { padding-bottom: 32px; }
+.eyebrow { color: #37c9ed; font-size: .78rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+h1 { margin: 14px 0 20px; font-size: clamp(2.4rem, 6vw, 4.8rem); line-height: .98; letter-spacing: -.05em; }
+h2 { margin: 8px 0 18px; font-size: 1.45rem; }
+.low-contrast { max-width: 660px; color: #3b4c61; font-size: 1.05rem; line-height: 1.7; }
+.hero-actions { display: flex; gap: 12px; margin-top: 28px; }
+button { padding: 11px 18px; border: 1px solid #2d4960; border-radius: 12px; cursor: pointer; }
+.primary { border-color: #25bfe7; background: #25bfe7; color: #03131d; font-weight: 800; }
+.secondary { background: #10253a; color: #ddecfa; }
+.metric-grid, .content-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+.metric-grid article, .panel, .overflow-demo { padding: 24px; border: 1px solid #1d3a52; border-radius: 18px; background: linear-gradient(145deg, rgba(18, 39, 58, .92), rgba(10, 25, 40, .92)); box-shadow: 0 18px 55px rgba(0, 0, 0, .18); }
+.metric-grid span, .metric-grid small { display: block; color: #92a9bb; }
+.metric-grid strong { display: block; margin: 12px 0 8px; font-size: 2rem; }
+.content-grid { grid-template-columns: 1.2fr .8fr; }
+form { display: grid; gap: 10px; }
+input { width: 100%; min-height: 46px; padding: 10px 12px; border: 1px solid #31506a; border-radius: 10px; background: #071827; color: #f5faff; }
+.signal-image { width: 100%; height: 150px; object-fit: cover; border-radius: 12px; }
+.overflow-demo { overflow: visible; }
+.wide-table { width: 940px; display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1.4fr; gap: 16px; padding: 16px; border-radius: 10px; background: #091928; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 20px; background: rgba(0, 5, 12, .78); }
+.modal-backdrop[hidden] { display: none; }
+.modal { position: relative; width: min(520px, 100%); padding: 32px; border: 1px solid #2d566f; border-radius: 18px; background: #0c2133; }
+.icon-button { position: absolute; top: 12px; right: 12px; min-width: 44px; padding: 4px; background: transparent; color: #e8f3ff; }
+.auth-page { display: grid; place-items: center; padding: 24px; }
+.auth-shell { width: min(460px, 100%); padding: 24px 0; }
+.auth-card { margin-top: 28px; padding: 32px; border: 1px solid #204058; border-radius: 20px; background: #0b1e30; }
+.auth-card h1 { font-size: 2.3rem; }
+.auth-card label { margin-top: 4px; color: #c5d7e5; font-weight: 650; }
+
+@media (max-width: 680px) {
+  .menu-trigger { display: inline-flex; align-items: center; background: #10263a; color: #e8f3ff; }
+  .topbar { position: relative; }
+  .topbar nav { position: absolute; top: 72px; left: 0; right: 0; z-index: 5; display: none; padding: 18px 5vw; flex-direction: column; align-items: stretch; background: #091827; border-bottom: 1px solid #213c52; }
+  .topbar nav.open { display: flex; }
+  main { width: min(100% - 32px, 1160px); padding-top: 48px; overflow: visible; }
+  .metric-grid, .content-grid { grid-template-columns: 1fr; }
+  .hero-actions { align-items: stretch; flex-direction: column; }
+}

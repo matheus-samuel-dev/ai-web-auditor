@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:ai_web_auditor_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+app:
+  jwt-secret: test-jwt-secret-with-at-least-thirty-two-characters
+  jwt-expiration-minutes: 60
+  auditor-base-url: http://127.0.0.1:4000
+  auditor-api-token: test-auditor-api-token-with-safe-length
+  auditor-request-timeout-seconds: 30
+  internal-callback-base-url: http://127.0.0.1:8080
+  auditor-callback-token: test-callback-token-with-safe-length
+  storage-path: target/test-storage
+  frontend-url: http://localhost:5173
+  development-mode: false
+  allow-localhost-audits: false
+  audit-private-host-allowlist: []
+  audit-core-pool-size: 1
+  audit-max-pool-size: 1
+  audit-queue-capacity: 2
+  orphan-threshold-seconds: 3600
+  orphan-scan-delay-ms: 3600000
+

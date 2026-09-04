@@ -1,0 +1,132 @@
+.authShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  padding: 1.5rem;
+}
+
+.hero,
+.formWrap {
+  border-radius: 28px;
+}
+
+.hero {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(108, 99, 255, 0.34), transparent 24%),
+    radial-gradient(circle at 75% 40%, rgba(0, 195, 255, 0.16), transparent 24%),
+    linear-gradient(180deg, rgba(9, 13, 27, 0.98), rgba(5, 8, 16, 0.98));
+  border: 1px solid rgba(155, 165, 198, 0.12);
+}
+
+.hero h1 {
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  line-height: 1.02;
+  max-width: 12ch;
+}
+
+.hero p {
+  max-width: 56ch;
+  color: #a3afce;
+  font-size: 1.02rem;
+}
+
+.brandPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(108, 99, 255, 0.12);
+  border: 1px solid rgba(108, 99, 255, 0.24);
+  color: #d4d0ff;
+}
+
+.heroStats {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.heroStats div {
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.heroStats strong,
+.heroStats span {
+  display: block;
+}
+
+.heroStats span {
+  color: #8390b0;
+  margin-top: 0.3rem;
+}
+
+.formWrap {
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.formCard {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 1rem;
+  padding: 2rem;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(13, 19, 34, 0.98), rgba(8, 12, 24, 0.98));
+  border: 1px solid rgba(154, 168, 206, 0.12);
+  box-shadow: 0 24px 48px rgba(4, 8, 18, 0.38);
+}
+
+.formCard p {
+  color: #8c97b5;
+}
+
+.formCard label {
+  display: grid;
+  gap: 0.55rem;
+  color: #dfe6fb;
+}
+
+.formCard input {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(154, 168, 206, 0.12);
+}
+
+.switchText {
+  color: #96a2c2;
+  font-size: 0.92rem;
+}
+
+.switchText a {
+  color: #cfcaff;
+}
+
+@media (max-width: 960px) {
+  .authShell {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .hero {
+    min-height: 360px;
+    padding: 2rem;
+  }
+
+  .formWrap {
+    padding: 1rem 0 0;
+  }
+}
+

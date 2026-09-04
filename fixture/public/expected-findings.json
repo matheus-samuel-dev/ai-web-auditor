@@ -1,0 +1,14 @@
+{
+  "fixture": "pulseboard",
+  "credentials": { "username": "demo@aiwa.local", "password": "Demo123!" },
+  "expected": [
+    { "kind": "BROKEN_LINK", "evidence": "/broken", "status": 404 },
+    { "kind": "CONSOLE", "evidence": "FIXTURE_CONSOLE_ERROR" },
+    { "kind": "NETWORK", "evidence": "/api/error", "status": 500 },
+    { "kind": "ACCESSIBILITY", "evidence": "#unlabelled-search" },
+    { "kind": "ACCESSIBILITY", "evidence": ".signal-image", "rule": "image-alt" },
+    { "kind": "ACCESSIBILITY", "evidence": ".low-contrast", "rule": "color-contrast" },
+    { "kind": "RESPONSIVE", "evidence": ".wide-table", "rule": "horizontal-overflow" },
+    { "kind": "FUNCTIONAL", "evidence": "#no-action", "rule": "no-state-change" }
+  ]
+}

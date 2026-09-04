@@ -1,0 +1,52 @@
+server:
+  port: ${SERVER_PORT:8080}
+  compression:
+    enabled: true
+    mime-types: application/json,application/pdf,text/html,text/plain,text/css,application/javascript
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ai_web_auditor}
+    username: ${SPRING_DATASOURCE_USERNAME:ai_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:ai_admin}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  jwt-secret: ${APP_JWT_SECRET:${random.value}${random.value}}
+  jwt-expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:60}
+  auditor-base-url: ${APP_AUDITOR_BASE_URL:http://localhost:4000}
+  auditor-api-token: ${APP_AUDITOR_API_TOKEN:${random.value}${random.value}}
+  auditor-request-timeout-seconds: ${APP_AUDITOR_REQUEST_TIMEOUT_SECONDS:300}
+  internal-callback-base-url: ${APP_INTERNAL_CALLBACK_BASE_URL:http://localhost:8080}
+  auditor-callback-token: ${APP_AUDITOR_CALLBACK_TOKEN:${random.value}${random.value}}
+  storage-path: ${APP_STORAGE_PATH:../storage}
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
+  development-mode: ${APP_DEVELOPMENT_MODE:false}
+  allow-localhost-audits: ${APP_ALLOW_LOCALHOST_AUDITS:false}
+  audit-private-host-allowlist: ${APP_AUDIT_PRIVATE_HOST_ALLOWLIST:}
+  audit-core-pool-size: ${APP_AUDIT_CORE_POOL_SIZE:2}
+  audit-max-pool-size: ${APP_AUDIT_MAX_POOL_SIZE:4}
+  audit-queue-capacity: ${APP_AUDIT_QUEUE_CAPACITY:20}
+  orphan-threshold-seconds: ${APP_ORPHAN_THRESHOLD_SECONDS:900}

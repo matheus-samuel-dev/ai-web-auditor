@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Entrar — Pulseboard Fixture</title>
+    <meta name="description" content="Fluxo de autenticação de demonstração do fixture." />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-shell">
+      <a class="brand" href="/"><span class="brand-mark">P</span>Pulseboard</a>
+      <section class="auth-card" aria-labelledby="login-title">
+        <p class="eyebrow">Acesso de demonstração</p>
+        <h1 id="login-title">Entrar no ambiente</h1>
+        <p>Use <strong>demo@aiwa.local</strong> e <strong>Demo123!</strong>.</p>
+        <form id="login-form">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" required autocomplete="username" />
+          <label for="password">Senha</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password" />
+          <button class="primary" type="submit">Entrar</button>
+        </form>
+        <p id="login-status" role="alert"></p>
+      </section>
+    </main>
+    <script src="/login.js"></script>
+  </body>
+</html>

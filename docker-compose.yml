@@ -1,0 +1,153 @@
+name: ai-web-auditor
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-web-auditor-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ai_web_auditor}
+      POSTGRES_USER: ${POSTGRES_USER:-ai_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - data
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ai-web-auditor-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?Defina APP_JWT_SECRET no arquivo .env}
+      APP_JWT_EXPIRATION_MINUTES: ${APP_JWT_EXPIRATION_MINUTES:-1440}
+      APP_AUDITOR_BASE_URL: http://auditor-service:4000
+      APP_AUDITOR_API_TOKEN: ${APP_AUDITOR_API_TOKEN:?Defina APP_AUDITOR_API_TOKEN no arquivo .env}
+      APP_INTERNAL_CALLBACK_BASE_URL: http://backend:8080
+      APP_AUDITOR_CALLBACK_TOKEN: ${APP_AUDITOR_CALLBACK_TOKEN:?Defina APP_AUDITOR_CALLBACK_TOKEN no arquivo .env}
+      APP_AUDITOR_REQUEST_TIMEOUT_SECONDS: ${APP_AUDITOR_REQUEST_TIMEOUT_SECONDS:-900}
+      APP_STORAGE_PATH: /workspace/storage
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ai_web_auditor}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-ai_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      APP_FRONTEND_URL: http://localhost:5175
+      APP_AUDIT_PRIVATE_HOST_ALLOWLIST: fixture
+    ports:
+      - "127.0.0.1:8085:8080"
+    volumes:
+      - ./storage:/workspace/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080; printf \"GET /actuator/health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3; grep -q \"200\" <&3'"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 35s
+    stop_grace_period: 30s
+    networks:
+      - edge
+      - audit
+      - data
+    logging: *default-logging
+
+  auditor-service:
+    build:
+      context: ./auditor-service
+    container_name: ai-web-auditor-service
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+      STORAGE_PATH: /workspace/storage
+      AUDITOR_API_TOKEN: ${APP_AUDITOR_API_TOKEN:?Defina APP_AUDITOR_API_TOKEN no arquivo .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      AUDITOR_TIMEOUT_MS: ${AUDITOR_TIMEOUT_MS:-120000}
+      AUDITOR_TIMEOUT_SECONDS: ${AUDITOR_TIMEOUT_SECONDS:-900}
+      AUDITOR_PRIVATE_HOST_ALLOWLIST: fixture
+      AUDITOR_ALLOWED_CALLBACK_HOSTS: http://backend:8080
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - ./storage:/workspace/storage
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    init: true
+    shm_size: "1gb"
+    pids_limit: 512
+    stop_grace_period: 30s
+    networks:
+      - audit
+    logging: *default-logging
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
+    container_name: ai-web-auditor-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5175:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - edge
+    logging: *default-logging
+
+  fixture:
+    build:
+      context: ./fixture
+    container_name: ai-web-auditor-fixture
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4180:4180"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4180/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - audit
+    read_only: true
+    tmpfs:
+      - /tmp
+    pids_limit: 64
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+
+networks:
+  edge:
+  audit:
+  data:
+    internal: true
