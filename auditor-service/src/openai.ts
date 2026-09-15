@@ -135,6 +135,7 @@ function extractJson(content: string): string {
 }
 
 function fallbackAnalysis(input: GenerateAiAnalysisInput): AiAnalysis {
+  const measuredRecommendations = [...new Set(input.issues.map(issue => issue.recommendation).filter(Boolean))].slice(0, 4);
   const criticalIssues = input.issues.filter((issue) => issue.severity === "CRITICAL").length;
   const accessibilityScore = input.lighthouse.scores.accessibility;
   const performanceScore = input.lighthouse.scores.performance;
@@ -175,11 +176,7 @@ function fallbackAnalysis(input: GenerateAiAnalysisInput): AiAnalysis {
         ? `Há ${criticalIssues} problemas críticos priorizados na consolidação dos achados.`
         : "Os gaps mais relevantes estão concentrados em ajustes médios e baixos."
     ],
-    quickWins: [
-      "Corrigir links quebrados e falhas de carregamento visíveis no runtime.",
-      "Atacar as oportunidades do Lighthouse com maior impacto em renderização e peso.",
-      "Revisar alt, labels e elementos de navegação para subir a acessibilidade rapidamente."
-    ],
+    quickWins: measuredRecommendations.length ? measuredRecommendations : ["Nenhuma correção prioritária foi identificada nas verificações executadas."],
     practicalSuggestions: [
       performanceScore === null
         ? "Repita o Lighthouse em ambiente estável antes de priorizar otimizações baseadas em score."
@@ -193,11 +190,7 @@ function fallbackAnalysis(input: GenerateAiAnalysisInput): AiAnalysis {
         : "Aprofundar a acessibilidade com revisão manual por teclado e leitores de tela.",
       "Refinar CTA, hierarquia visual e feedbacks de interface para melhorar entendimento e conversão."
     ],
-    correctionPriorities: [
-      "Resolver erros de runtime e links quebrados antes de qualquer refinamento estético.",
-      "Atacar violações críticas de acessibilidade antes de promover a aplicação como produto maduro.",
-      "Executar uma nova auditoria após as correções para validar o ganho real de score."
-    ],
+    correctionPriorities: [...measuredRecommendations.slice(0, 2), "Executar uma nova auditoria após as correções para validar os resultados."],
     userImpact:
       "Os problemas encontrados podem aumentar abandono, gerar desconfiança em fluxos importantes e reduzir a qualidade percebida em mobile.",
     businessImpact:

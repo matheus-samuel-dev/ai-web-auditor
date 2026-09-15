@@ -226,7 +226,7 @@ public class AuditService {
 
   @Transactional
   public AuditListItemResponse cancel(String email, UUID auditId) {
-    Audit audit = requireOwnedAudit(email, auditId);
+    Audit audit = requireOwnedAuditForUpdate(email, auditId);
     if (audit.getStatus() == AuditStatus.COMPLETED || audit.getStatus() == AuditStatus.FAILED
         || audit.getStatus() == AuditStatus.CANCELLED) {
       throw new ApiException(HttpStatus.CONFLICT, "Somente auditorias pendentes ou em execução podem ser canceladas.");
@@ -244,7 +244,7 @@ public class AuditService {
 
   @Transactional
   public AuditListItemResponse retry(String email, UUID auditId, RetryAuditRequest request) {
-    Audit audit = requireOwnedAudit(email, auditId);
+    Audit audit = requireOwnedAuditForUpdate(email, auditId);
     if (audit.getStatus() != AuditStatus.FAILED && audit.getStatus() != AuditStatus.CANCELLED) {
       throw new ApiException(HttpStatus.CONFLICT, "Somente auditorias com falha ou canceladas podem ser tentadas novamente.");
     }
@@ -486,6 +486,13 @@ public class AuditService {
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Auditoria não encontrada."));
   }
 
+  private Audit requireOwnedAuditForUpdate(String email, UUID auditId) {
+    User user = loadUser(email);
+    return auditRepository.findByIdForUpdate(auditId)
+        .filter(audit -> audit.getUser().getId().equals(user.getId()))
+        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Auditoria não encontrada."));
+  }
+
   private User loadUser(String email) {
     return userRepository.findByEmail(email)
         .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
@@ -630,6 +637,7 @@ public class AuditService {
   }
 
   private AuditComparisonResponse buildComparison(Audit audit) {
+    if (audit.getStatus() != AuditStatus.COMPLETED) return null;
     Audit previous = null;
     boolean baseline = false;
     boolean validProjectTarget = audit.getProject() != null
@@ -669,7 +677,18 @@ public class AuditService {
         previous.getSeoScore(), audit.getSeoScore(), seoDelta,
         previous.getBestPracticesScore(), audit.getBestPracticesScore(), bestPracticesDelta,
         previous.getCoveragePercent(), audit.getCoveragePercent(), coverageDelta, baseline,
-        trendLabel(overallDelta, performanceDelta, accessibilityDelta, seoDelta, bestPracticesDelta, coverageDelta));
+        trendLabel(overallDelta, performanceDelta, accessibilityDelta, seoDelta, bestPracticesDelta, coverageDelta),
+        audit.getStatus() == AuditStatus.COMPLETED ? countNewFindings(audit, previous) : null);
+  }
+
+  private int countNewFindings(Audit current, Audit previous) {
+    var previousKeys = previous.getIssues().stream().map(this::findingKey).collect(java.util.stream.Collectors.toSet());
+    return (int) current.getIssues().stream().map(this::findingKey).distinct().filter(key -> !previousKeys.contains(key)).count();
+  }
+
+  private String findingKey(AuditIssue issue) {
+    return String.join("|", String.valueOf(issue.getType()), String.valueOf(issue.getTitle()),
+        String.valueOf(issue.getPageUrl()), String.valueOf(issue.getDevice()), String.valueOf(issue.getSelector()));
   }
 
   private List<ScoreTimelinePointResponse> buildScoreTimeline(List<Audit> audits) {

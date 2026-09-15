@@ -3,6 +3,7 @@ package com.aiwebauditor.auth;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ record RegisterRequest(
 
     @NotBlank(message = "Informe seu email.")
     @Email(message = "Informe um email válido.")
+    @Pattern(regexp = "^[^\\s@]+@[^\\s@.]+(?:\\.[^\\s@.]+)+$", message = "Informe um email válido, com domínio completo (ex.: nome@empresa.com).")
     @Size(max = 160, message = "O email deve ter no máximo 160 caracteres.")
     String email,
 
@@ -24,6 +26,7 @@ record RegisterRequest(
 record LoginRequest(
     @NotBlank(message = "Informe seu email.")
     @Email(message = "Informe um email válido.")
+    @Pattern(regexp = "^[^\\s@]+@[^\\s@.]+(?:\\.[^\\s@.]+)+$", message = "Informe um email válido, com domínio completo (ex.: nome@empresa.com).")
     @Size(max = 160, message = "O email deve ter no máximo 160 caracteres.")
     String email,
 

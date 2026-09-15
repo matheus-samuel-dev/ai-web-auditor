@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium, type Browser } from "playwright";
+import { createAuditProxy } from "./lib/audit-proxy.js";
 import { resolveAuditConfiguration } from "./audit-config.js";
 import {
   AuditCancelledError,
@@ -66,6 +67,7 @@ export async function runAudit(request: AuditRunRequest): Promise<AuditRunRespon
   const ssrfOptions = buildSsrfOptions();
   const log = createAuditLogger(request.auditId, request.url);
   let browser: Browser | null = null;
+  let proxy: Awaited<ReturnType<typeof createAuditProxy>> | null = null;
   let runtimeFinished = false;
 
   const emitProgress = async (
@@ -113,12 +115,13 @@ export async function runAudit(request: AuditRunRequest): Promise<AuditRunRespon
 
     log("audit.accepted", { mode: config.auditMode, viewports: config.viewports.length, maxPages: config.maxPages });
     await emitProgress(7, "BOOTING_BROWSER", "Iniciando o navegador isolado.");
+    proxy = await createAuditProxy(ssrfOptions);
     browser = await runWithTimeout(
       "inicialização do browser",
       Math.min(config.stageTimeoutSeconds * 1_000, 60_000),
       runtime.signal,
       async (stageSignal) => {
-        const launchPromise = chromium.launch({ headless: true });
+        const launchPromise = chromium.launch({ headless: true, proxy: { server: proxy!.url, bypass: "<-loopback>" } });
         void launchPromise.then((launchedBrowser) => {
           if (stageSignal.aborted || runtime.signal.aborted) {
             void launchedBrowser.close().catch(() => undefined);
@@ -151,6 +154,10 @@ export async function runAudit(request: AuditRunRequest): Promise<AuditRunRespon
       log: (message, error) => log("browser", { message: redactText(message), error: error ? toSafeErrorDetails(error) : undefined })
     });
 
+    if (!browserResult.pages.some((page) => page.validationStatus === "VALIDATED_AUTOMATICALLY")) {
+      throw new Error("Nenhuma página pôde ser analisada pelo navegador. Verifique a disponibilidade do site.");
+    }
+
     throwIfAborted(runtime.signal);
     await emitProgress(66, "RUNNING_LIGHTHOUSE", "Executando Lighthouse com proteção de rede.", {
       pagesVisited: browserResult.coverage.pagesVisited,
@@ -162,12 +169,16 @@ export async function runAudit(request: AuditRunRequest): Promise<AuditRunRespon
       180_000
     );
     const lighthouseTarget = await validateUrl(browserResult.finalUrl || targetUrl);
-    const lighthouse = await runLighthouseAudit(lighthouseTarget, lighthouseTimeout, runtime.signal, validateUrl);
+    // Reserve time for links, cleanup and artifacts so an isolated Lighthouse stall
+    // cannot consume the entire audit deadline and discard valid browser evidence.
+    const lighthouseBudget = Math.min(lighthouseTimeout, Math.max(1_000,
+      config.timeoutSeconds * 1_000 - (Date.now() - startedAt.getTime()) - 15_000));
+    const lighthouse = await runLighthouseAudit(lighthouseTarget, lighthouseBudget, runtime.signal, validateUrl, proxy.url);
 
     throwIfAborted(runtime.signal);
     await emitProgress(76, "CHECKING_LINKS", "Verificando links com validação SSRF em cada redirecionamento.");
-    const brokenLinks = await checkBrokenLinks(browserResult, config, ssrfOptions, runtime.signal, ids);
-    browserResult.coverage.linksChecked = uniqueLinkCandidates(browserResult).length;
+    const linkResults = await checkBrokenLinks(browserResult, config, ssrfOptions, runtime.signal, ids);
+    const brokenLinks = linkResults.filter((link) => link.statusCode >= 400);
 
     const findings = buildFindings({ browser: browserResult, lighthouse, brokenLinks }, ids);
     const issueSummary = buildIssueSummary(findings, brokenLinks, browserResult);
@@ -217,6 +228,8 @@ export async function runAudit(request: AuditRunRequest): Promise<AuditRunRespon
       ai,
       artifacts
     });
+    const uncertainLinks = linkResults.filter((link) => link.validationStatus === "REQUIRES_MANUAL_VALIDATION");
+    if (uncertainLinks.length) (reportData.limitations ??= []).push(`${uncertainLinks.length} link(s) não puderam ser verificados por falha de comunicação ou bloqueio; exigem validação manual.`);
 
     throwIfAborted(runtime.signal);
     await emitProgress(93, "BUILDING_JSON", "Persistindo relatório JSON estruturado.", { findingsCount: findings.length });
@@ -226,6 +239,7 @@ export async function runAudit(request: AuditRunRequest): Promise<AuditRunRespon
     const mobileAbsolutePath = resolveArtifactForRead(browserResult.mobileScreenshotPath);
     await emitProgress(97, "BUILDING_PDF", "Gerando relatório executivo em PDF.", { findingsCount: findings.length });
     await generatePdfReport({
+      auditId: request.auditId,
       outputPath: artifacts.pdfAbsolutePath,
       url: safeUrl(targetUrl),
       auditedAt,
@@ -297,6 +311,7 @@ export async function runAudit(request: AuditRunRequest): Promise<AuditRunRespon
   } finally {
     runtime.signal.removeEventListener("abort", closeOnAbort);
     if (browser) await browser.close().catch(() => undefined);
+    if (proxy) await proxy.close();
     if (!runtimeFinished) finishAuditRuntime(request.auditId, "FAILED", "Execução encerrada sem estado terminal.");
   }
 }
@@ -401,11 +416,11 @@ async function checkBrokenLinks(
         }, { ...ssrfOptions, maxRedirects: 6 });
         let status = response.status;
         await response.body?.cancel().catch(() => undefined);
-        if (status === 405 || status === 501) {
+        if ([400, 403, 404, 405, 501].includes(status)) {
           response = await fetchWithSsrfGuard(candidate.url, {
             method: "GET",
             signal: stageSignal,
-            headers: { "User-Agent": "AIWebAuditorBot/2.0 LinkChecker", Range: "bytes=0-0" }
+            headers: { "User-Agent": "AIWebAuditorBot/2.0 LinkChecker" }
           }, { ...ssrfOptions, maxRedirects: 6 });
           status = response.status;
           await response.body?.cancel().catch(() => undefined);
@@ -415,10 +430,12 @@ async function checkBrokenLinks(
       return { id: ids.nextNetwork(), url: safeUrl(candidate.url), statusCode, sourcePageId: candidate.pageId, validationStatus: "VALIDATED_AUTOMATICALLY" as const };
     } catch (error) {
       if (signal.aborted) throw signal.reason instanceof Error ? signal.reason : error;
-      return { id: ids.nextNetwork(), url: safeUrl(candidate.url), statusCode: 599, sourcePageId: candidate.pageId, validationStatus: "FAILED" as const };
+      return { id: ids.nextNetwork(), url: safeUrl(candidate.url), statusCode: 0, sourcePageId: candidate.pageId, validationStatus: "REQUIRES_MANUAL_VALIDATION" as const };
     }
   });
-  return results.filter((item) => item.statusCode >= 400);
+  browser.coverage.linksChecked = results.filter((item) => item.statusCode > 0).length;
+  // Uncertain transport failures are reported as limitations, never invented HTTP failures.
+  return results.filter((item) => item.statusCode >= 400 || item.statusCode === 0);
 }
 
 function uniqueLinkCandidates(browser: BrowserAuditResult): Array<{ url: string; pageId: string }> {
@@ -486,6 +503,7 @@ function buildFindings(
       recommendation: `Corrija a regra ${violation.id} e valide com teclado e tecnologia assistiva.`,
       source: "axe-core",
       pageId: violation.pageId,
+      url: input.browser.pages.find((page) => page.id === violation.pageId)?.url,
       viewportId: violation.viewportId,
       evidenceIds: [violation.pageId, screenshot?.id].filter(Boolean) as string[],
       screenshotPath: screenshot?.relativePath,
@@ -620,7 +638,7 @@ function buildReportData(input: {
   const { authConfig, ...publicConfiguration } = input.config;
   const mobile = input.browser.responsive.find((item) => item.viewport.isMobile);
   const limitations: string[] = [];
-  if (input.lighthouse.status === "FAILED") limitations.push(`Lighthouse falhou: ${input.lighthouse.failureReason || "motivo não informado"}.`);
+  if (input.lighthouse.status === "FAILED") limitations.push("O Lighthouse não conseguiu concluir a medição. As demais evidências foram preservadas; repita a auditoria para obter as métricas.");
   if (!input.browser.desktopScreenshotPath) limitations.push("A captura desktop da página principal ficou indisponível.");
   if (!input.browser.mobileScreenshotPath) limitations.push("A captura mobile da página principal ficou indisponível.");
   const unavailableResponsiveCaptures = input.browser.responsive.filter((item) => !item.screenshotPath).length;
@@ -810,6 +828,7 @@ function clampInteger(value: number, minimum: number, maximum: number): number {
 }
 
 export const __testing = {
+  checkBrokenLinks,
   globMatches,
   createUrlPolicy,
   calculateOverallScore,

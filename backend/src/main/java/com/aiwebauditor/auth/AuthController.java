@@ -15,9 +15,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthService authService;
+  private final DemoAuthService demoAuthService;
 
-  public AuthController(AuthService authService) {
+  public AuthController(AuthService authService, DemoAuthService demoAuthService) {
     this.authService = authService;
+    this.demoAuthService = demoAuthService;
+  }
+
+  @PostMapping("/demo")
+  AuthResponse demo() {
+    return demoAuthService.login();
   }
 
   @PostMapping("/register")
@@ -36,4 +43,3 @@ public class AuthController {
     return authService.me(authentication.getName());
   }
 }
-

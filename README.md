@@ -20,6 +20,28 @@ AI Web Auditor was designed as a SaaS-style product instead of a static demo. A 
 
 ## Features
 
+### Portfolio demo and functional validation
+
+On the login screen, choose **Entrar como usuário demo**. The backend seeds the shared demo account idempotently and authenticates it through the normal password/JWT flow. Its random password stays on the server; no password or fixed token is shipped to the frontend. Docker enables this with `APP_DEMO_ENABLED=true`; other environments default to disabled.
+
+After starting the stack, provision at least two **real** public audits for the demo account:
+
+```sh
+node scripts/seed-demo.mjs
+```
+
+This command reuses completed audits of `https://example.com/`. It does not fabricate scores, findings or screenshots. The resulting dashboard, history, reports and same-URL comparisons remain in PostgreSQL and shared storage across logins/restarts.
+
+Final validation evidence and known limits are documented in [docs/functional-validation-2026-09-14.md](docs/functional-validation-2026-09-14.md). Reproducible checks:
+
+```sh
+node scripts/validate-live.mjs
+node scripts/validate-failures.mjs
+docker compose run --rm -T -v "./scripts:/validation:ro" auditor-service node --test /validation/worker-integration.mjs
+```
+
+The failure script temporarily stops and restarts **only this project's auditor-service**, and creates test audits. Use it in the local validation stack. Runtime evidence is written to `storage/validation/` and excluded from Git. Chromium and Lighthouse use an audit-scoped validating proxy so redirected requests cannot reach private addresses before being rejected; the existing exact fixture allowlist remains limited to the local test service.
+
 - JWT authentication with signup, login, and protected routes
 - Real published-site audits powered by Playwright
 - Lighthouse scoring for Performance, Accessibility, SEO, and Best Practices

@@ -285,9 +285,9 @@ export function AuditHistoryPage() {
                   <small className={pageStyles.historyCellLabel}>Status</small>
                   <StatusBadge status={audit.status} />
                 </span>
-                <span role="cell">
+                <span className={pageStyles.historyScoreCell} role="cell">
                   <small className={pageStyles.historyCellLabel}>Score</small>
-                  <strong className={pageStyles.historyScore}>{audit.overallScore != null ? `${audit.overallScore}/100` : `${audit.progressPercent}%`}</strong>
+                  <strong className={pageStyles.historyScore}>{audit.overallScore != null ? `${audit.overallScore}/100` : "Não medido"}</strong>
                   <small>{pluralizeIssues(audit.totalIssues)}</small>
                 </span>
                 <span role="cell">

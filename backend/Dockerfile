@@ -3,10 +3,11 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn -q -DskipTests dependency:go-offline
 COPY src ./src
-RUN mvn -q -DskipTests package
+RUN mvn -q clean package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
+COPY java-security.properties /app/java-security.properties
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-Djava.security.properties=/app/java-security.properties", "-jar", "/app/app.jar"]

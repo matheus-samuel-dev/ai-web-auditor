@@ -10,6 +10,7 @@ import type {
 } from "./types.js";
 
 interface GeneratePdfInput {
+  auditId?: string;
   outputPath: string;
   url: string;
   auditedAt: string;
@@ -37,6 +38,7 @@ export async function generatePdfReport(input: GeneratePdfInput): Promise<string
   await fs.promises.mkdir(path.dirname(input.outputPath), { recursive: true });
 
   const doc = new PDFDocument({
+    info: { Title: "AI Web Auditor", Subject: input.auditId ? `Auditoria ${input.auditId} — ${input.url}` : input.url },
     size: "A4",
     margin: 36,
     compress: true

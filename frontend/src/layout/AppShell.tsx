@@ -27,7 +27,7 @@ const routeMeta = [
   { match: /^\/projects/, eyebrow: "Portfólio monitorado", title: "Projetos", description: "Baselines, ambientes e configurações reutilizáveis por domínio." },
   { match: /^\/audits\/new/, eyebrow: "Escopo controlado", title: "Configurar auditoria", description: "Defina o que pode ser testado, em quais dispositivos e com quais limites." },
   { match: /^\/audits\/history/, eyebrow: "Rastreabilidade", title: "Execuções", description: "Consulte, compare e retome auditorias sem perder o contexto." },
-  { match: /^\/audits\//, eyebrow: "Evidência verificável", title: "Relatório técnico", description: "Cobertura, jornadas, achados e artefatos ligados ao que foi realmente executado." },
+  { match: /^\/audits\//, eyebrow: "Análise técnica", title: "Relatório da auditoria", description: "Cobertura, jornadas, achados e artefatos ligados ao que foi realmente executado." },
   { match: /^\/settings/, eyebrow: "Preferências", title: "Configurações", description: "Conta, auditoria, IA, retenção, aparência e notificações." }
 ];
 

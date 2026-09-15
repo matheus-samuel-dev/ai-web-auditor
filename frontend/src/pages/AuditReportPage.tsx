@@ -392,8 +392,8 @@ export function AuditReportPage() {
             <span>{report.url}</span>
             <StatusBadge status={report.status} />
           </div>
-          <h2>Relatório da Auditoria</h2>
           <p>{aiSummary?.executiveSummary || report.aiSummary || "Aguarde a consolidação da auditoria automatizada."}</p>
+          {report.reportData?.limitations?.length ? <details><summary>Limitações da análise</summary><ul>{report.reportData.limitations.map((item, index) => <li key={index}>{item}</li>)}</ul></details> : null}
         </div>
         <div className={pageStyles.headerActions}>
           <button
@@ -577,6 +577,7 @@ export function AuditReportPage() {
                 <button className="secondaryButton" type="button" onClick={() => navigate(`/audits/${report.comparison?.previousAuditId}`)}>Ver anterior</button>
               </div>
               <div className={pageStyles.comparisonLegend} aria-hidden="true"><span>Métrica</span><span>Anterior</span><span>Atual</span><span>Diferença</span></div>
+              {report.comparison.newFindings != null ? <p>Novos achados nesta execução: {report.comparison.newFindings}. Achados ausentes não são considerados resolvidos automaticamente.</p> : null}
               <div className={pageStyles.deltaGrid}>
                 <ComparisonMetric label="Geral" previous={report.comparison.previousOverallScore} current={report.comparison.currentOverallScore ?? report.overallScore} delta={report.comparison.overallDelta} />
                 <ComparisonMetric label="Performance" previous={comparisonPrevious(report.comparison.previousPerformanceScore, report.comparison.currentPerformanceScore ?? report.performanceScore, report.comparison.performanceDelta)} current={report.comparison.currentPerformanceScore ?? report.performanceScore} delta={report.comparison.performanceDelta} />
@@ -1176,7 +1177,10 @@ export function describeLighthouseMetric(key: string, rawValue: unknown): Metric
 }
 
 function metricNumericValue(value: string, unit: "ms" | "raw") {
-  const match = value.replace(",", ".").match(/-?\d+(?:\.\d+)?/);
+  // Lighthouse uses English thousands separators (e.g. "6,200 ms").
+  // Keep decimal commas supported for localized seconds and raw CLS values.
+  const normalized = unit === "ms" ? value.replace(/(\d),(?=\d{3}(?:\D|$))/g, "$1") : value;
+  const match = normalized.replace(",", ".").match(/-?\d+(?:\.\d+)?/);
   if (!match) return null;
   const number = Number(match[0]);
   if (!Number.isFinite(number)) return null;

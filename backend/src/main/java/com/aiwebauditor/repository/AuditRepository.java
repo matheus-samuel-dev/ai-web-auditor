@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,6 +16,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AuditRepository extends JpaRepository<Audit, UUID>, JpaSpecificationExecutor<Audit> {
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select a from Audit a where a.id = :id")
+  Optional<Audit> findByIdForUpdate(@Param("id") UUID id);
 
   @EntityGraph(attributePaths = "project")
   List<Audit> findAllByUserIdOrderByCreatedAtDesc(UUID userId);

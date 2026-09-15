@@ -12,6 +12,7 @@ spring:
     enabled: true
 
 app:
+  demo-enabled: true
   jwt-secret: test-jwt-secret-with-at-least-thirty-two-characters
   jwt-expiration-minutes: 60
   auditor-base-url: http://127.0.0.1:4000
@@ -29,4 +30,3 @@ app:
   audit-queue-capacity: 2
   orphan-threshold-seconds: 3600
   orphan-scan-delay-ms: 3600000
-

@@ -19,6 +19,22 @@ const server = http.createServer(async (request, response) => {
   if (url.pathname === "/health") {
     return json(response, 200, { status: "ok", service: "aiwa-fixture" });
   }
+  if (url.pathname === "/redirect-private") {
+    response.writeHead(302, { Location: "http://127.0.0.1:8080/actuator/health" });
+    return response.end();
+  }
+  if (url.pathname === "/redirect") {
+    response.writeHead(302, { Location: "/" });
+    return response.end();
+  }
+  if (url.pathname === "/timeout") {
+    const timer = setTimeout(() => html(response, 200, "<h1>Resposta tardia</h1>"), 120000);
+    response.on("close", () => clearTimeout(timer));
+    return;
+  }
+  if (url.pathname === "/head-rejected") {
+    return html(response, request.method === "HEAD" ? 405 : 200, "<h1>Link saudável</h1>");
+  }
   if (url.pathname === "/api/error") {
     return json(response, 500, { code: "FIXTURE_FAILURE", message: "Falha controlada para validar captura de rede." });
   }

@@ -29,6 +29,8 @@ import java.util.Comparator;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -81,6 +83,37 @@ class BackendApiIntegrationTest {
                 {"email":"alice@example.test","password":"wrong-password"}
                 """))
         .andExpect(status().isUnauthorized());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"usuario@", "usuario@dominio", "@dominio.com", "usuario@@dominio.com", "usuario dominio@gmail.com"})
+  void rejectsIncompleteEmailsOnRegisterAndLogin(String email) throws Exception {
+    String payload = objectMapper.writeValueAsString(java.util.Map.of("name", "Teste", "email", email, "password", "StrongPass123!"));
+    for (String endpoint : java.util.List.of("register", "login")) {
+      mockMvc.perform(post("/api/auth/" + endpoint).contentType(MediaType.APPLICATION_JSON).content(payload))
+          .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fieldErrors.email").exists());
+    }
+    assertThat(userRepository.existsByEmail(email)).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"usuario@gmail.com", "nome.sobrenome@empresa.com.br", "nome+tag@empresa.com"})
+  void acceptsNormalEmails(String email) throws Exception {
+    register("Teste", email, "StrongPass123!");
+  }
+
+  @Test
+  void demoUsesRealJwtAndReusesTheSameAccount() throws Exception {
+    long before = userRepository.count();
+    String first = mockMvc.perform(post("/api/auth/demo")).andExpect(status().isOk())
+        .andExpect(jsonPath("$.token").isNotEmpty()).andReturn().getResponse().getContentAsString();
+    JsonNode session = objectMapper.readTree(first);
+    mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer " + session.path("token").asText()))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(session.path("user").path("id").asText()));
+    mockMvc.perform(post("/api/auth/demo")).andExpect(status().isOk())
+        .andExpect(jsonPath("$.user.id").value(session.path("user").path("id").asText()));
+    assertThat(userRepository.count()).isEqualTo(before);
+    mockMvc.perform(get("/api/audits/history")).andExpect(status().isForbidden());
   }
 
   @Test
@@ -414,6 +447,12 @@ class BackendApiIntegrationTest {
     current.setOverallScore(null);
     current.setPerformanceScore(85);
     current.setCoveragePercent(70);
+    AuditIssue newIssue = new AuditIssue();
+    newIssue.setAudit(current);
+    newIssue.setType(IssueType.SECURITY);
+    newIssue.setSeverity(IssueSeverity.MEDIUM);
+    newIssue.setTitle("Novo achado real");
+    current.getIssues().add(newIssue);
     auditRepository.flush();
 
     AuditComparisonResponse comparison = auditService.getById(owner.email(), currentId).comparison();
@@ -428,6 +467,12 @@ class BackendApiIntegrationTest {
     assertThat(comparison.performanceDelta()).isEqualTo(15);
     assertThat(comparison.coverageDelta()).isEqualTo(-10);
     assertThat(comparison.trendLabel()).isEqualTo("Melhorou");
+    assertThat(comparison.newFindings()).isEqualTo(1);
+    for (AuditStatus state : new AuditStatus[] {AuditStatus.PENDING, AuditStatus.RUNNING, AuditStatus.FAILED, AuditStatus.CANCELLED}) {
+      current.setStatus(state);
+      auditRepository.flush();
+      assertThat(auditService.getById(owner.email(), currentId).comparison()).isNull();
+    }
   }
 
   @Test

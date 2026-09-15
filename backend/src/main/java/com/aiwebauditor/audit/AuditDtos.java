@@ -404,7 +404,8 @@ record AuditComparisonResponse(
     Integer currentCoveragePercent,
     Integer coverageDelta,
     boolean baseline,
-    String trendLabel
+    String trendLabel,
+    Integer newFindings
 ) {}
 
 record AuditArtifactResponse(String status, String url, String message) {}

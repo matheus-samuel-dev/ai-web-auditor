@@ -35,6 +35,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      APP_DEMO_ENABLED: ${APP_DEMO_ENABLED:-true}
       APP_JWT_SECRET: ${APP_JWT_SECRET:?Defina APP_JWT_SECRET no arquivo .env}
       APP_JWT_EXPIRATION_MINUTES: ${APP_JWT_EXPIRATION_MINUTES:-1440}
       APP_AUDITOR_BASE_URL: http://auditor-service:4000

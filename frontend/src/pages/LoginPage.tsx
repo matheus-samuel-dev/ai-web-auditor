@@ -1,14 +1,15 @@
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { usePageMeta } from "../hooks/usePageMeta";
 import authStyles from "../styles/auth.module.css";
+import { EMAIL_ERROR, isValidEmail } from "../utils/email";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, token } = useAuth();
+  const { login, loginDemo, token } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,6 +26,7 @@ export function LoginPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!isValidEmail(email)) { setError(EMAIL_ERROR); return; }
     setLoading(true);
     setError("");
 
@@ -34,6 +36,19 @@ export function LoginPage() {
       navigate(requestedDestination.startsWith("/") && !requestedDestination.startsWith("//") ? requestedDestination : "/");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível entrar.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDemo() {
+    setLoading(true);
+    setError("");
+    try {
+      await loginDemo();
+      navigate("/");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Não foi possível entrar como demo.");
     } finally {
       setLoading(false);
     }
@@ -73,8 +88,10 @@ export function LoginPage() {
 
           <label>
             Email
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required
+              aria-invalid={email.length > 0 && !isValidEmail(email)} aria-describedby="email-feedback" />
           </label>
+          {email && !isValidEmail(email) ? <div id="email-feedback" className="inlineError" role="alert">{EMAIL_ERROR}</div> : null}
 
           <label>
             Senha
@@ -83,9 +100,17 @@ export function LoginPage() {
 
           {error ? <div className="inlineError">{error}</div> : null}
 
-          <button className="primaryButton" disabled={loading} type="submit">
+          <button className="primaryButton" disabled={loading || !isValidEmail(email)} type="submit">
             {loading ? "Autenticando..." : "Entrar no painel"}
           </button>
+
+          <div className={authStyles.demoAccess}>
+            <span>Acesso rápido</span>
+            <button className="secondaryButton" disabled={loading} type="button" onClick={handleDemo}>
+              <Sparkles size={16} />
+              Entrar como usuário demo
+            </button>
+          </div>
 
           <span className={authStyles.switchText}>
             Ainda não tem conta? <Link to="/register">Criar conta</Link>

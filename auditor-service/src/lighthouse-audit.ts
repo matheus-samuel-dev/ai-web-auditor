@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { createAuditProxy } from "./lib/audit-proxy.js";
 import { runWithTimeout } from "./pipeline-utils.js";
 import { redactText } from "./lib/redaction.js";
 import type { LighthouseOpportunity, LighthouseReportData } from "./types.js";
@@ -7,17 +8,25 @@ export async function runLighthouseAudit(
   targetUrl: string,
   timeoutMs: number,
   signal: AbortSignal,
-  validateRequestUrl?: (url: string) => Promise<unknown>
+  validateRequestUrl?: (url: string) => Promise<unknown>,
+  proxyUrl?: string
 ): Promise<LighthouseReportData> {
   let chrome: Awaited<ReturnType<(typeof import("chrome-launcher"))["launch"]>> | null = null;
   let cdpBrowser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | null = null;
+  let ownedProxy: Awaited<ReturnType<typeof createAuditProxy>> | null = null;
   try {
+    if (!proxyUrl) {
+      ownedProxy = await createAuditProxy({ environment: "production", privateHostAllowlist: String(process.env.AUDITOR_PRIVATE_HOST_ALLOWLIST || "").split(",").filter(Boolean) });
+      proxyUrl = ownedProxy.url;
+    }
     const lighthouseModule = await import("lighthouse");
     const chromeLauncher = await import("chrome-launcher");
     chrome = await chromeLauncher.launch({
       chromePath: chromium.executablePath(),
       chromeFlags: [
         "--headless",
+        `--proxy-server=${proxyUrl}`,
+        "--proxy-bypass-list=<-loopback>",
         "--no-sandbox",
         "--disable-gpu",
         "--disable-dev-shm-usage",
@@ -50,7 +59,7 @@ export async function runLighthouseAudit(
     }
     const onAbort = () => {
       try {
-        activeChrome.kill();
+        void Promise.resolve(activeChrome.kill()).catch(() => undefined);
       } catch {
         // The browser process may already have exited.
       }
@@ -70,6 +79,9 @@ export async function runLighthouseAudit(
       const lhr = runnerResult?.lhr as Record<string, any> | undefined;
       if (!lhr) {
         throw new Error("O Lighthouse não produziu um relatório válido.");
+      }
+      if (lhr.runtimeError) {
+        throw new Error(String(lhr.runtimeError.message || "O Lighthouse não conseguiu carregar a página."));
       }
       const audits = (lhr.audits || {}) as Record<string, any>;
       const networkItems = Array.isArray(audits["network-requests"]?.details?.items)
@@ -130,11 +142,12 @@ export async function runLighthouseAudit(
     }
     if (chrome) {
       try {
-        chrome.kill();
+        await chrome.kill();
       } catch {
         // The browser process may already have exited.
       }
     }
+    if (ownedProxy) await ownedProxy.close();
   }
 }
 

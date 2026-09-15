@@ -245,6 +245,7 @@ export interface AuditComparison {
   coverageDelta: number | null;
   baseline: boolean;
   trendLabel: string;
+  newFindings?: number | null;
 }
 
 export interface AuditArtifact {

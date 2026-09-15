@@ -34,6 +34,7 @@ management:
         include: health,info
 
 app:
+  demo-enabled: ${APP_DEMO_ENABLED:false}
   jwt-secret: ${APP_JWT_SECRET:${random.value}${random.value}}
   jwt-expiration-minutes: ${APP_JWT_EXPIRATION_MINUTES:60}
   auditor-base-url: ${APP_AUDITOR_BASE_URL:http://localhost:4000}

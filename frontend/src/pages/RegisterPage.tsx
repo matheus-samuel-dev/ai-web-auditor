@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { usePageMeta } from "../hooks/usePageMeta";
 import authStyles from "../styles/auth.module.css";
+import { EMAIL_ERROR, isValidEmail } from "../utils/email";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export function RegisterPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!isValidEmail(email)) { setError(EMAIL_ERROR); return; }
     setLoading(true);
     setError("");
 
@@ -63,8 +65,10 @@ export function RegisterPage() {
 
           <label>
             Email
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required
+              aria-invalid={email.length > 0 && !isValidEmail(email)} aria-describedby="email-feedback" />
           </label>
+          {email && !isValidEmail(email) ? <div id="email-feedback" className="inlineError" role="alert">{EMAIL_ERROR}</div> : null}
 
           <label>
             Senha
@@ -73,7 +77,7 @@ export function RegisterPage() {
 
           {error ? <div className="inlineError">{error}</div> : null}
 
-          <button className="primaryButton" disabled={loading} type="submit">
+          <button className="primaryButton" disabled={loading || !isValidEmail(email)} type="submit">
             {loading ? "Criando conta..." : "Criar e entrar"}
           </button>
 

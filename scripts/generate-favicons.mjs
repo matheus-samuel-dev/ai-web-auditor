@@ -20,7 +20,13 @@ const targets = [
 
 await fs.mkdir(publicDir, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+let browser;
+try {
+  browser = await chromium.launch({ headless: true });
+} catch (error) {
+  if (process.platform !== "win32") throw error;
+  browser = await chromium.launch({ headless: true, channel: "msedge" });
+}
 
 try {
   const page = await browser.newPage();

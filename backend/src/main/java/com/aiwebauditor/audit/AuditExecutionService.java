@@ -90,7 +90,7 @@ class AuditStateService {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void complete(UUID auditId, AuditorRunResponse result, AuditRunConfiguration configuration) {
-    Audit audit = auditRepository.findById(auditId).orElse(null);
+    Audit audit = auditRepository.findByIdForUpdate(auditId).orElse(null);
     if (audit == null) return;
     if (audit.getStatus() == AuditStatus.CANCELLED || audit.isCancelRequested()) {
       log.info("Resultado descartado porque a auditoria {} foi cancelada", auditId);
@@ -118,7 +118,7 @@ class AuditStateService {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void fail(UUID auditId, Exception exception, AuditRunConfiguration configuration) {
-    Audit audit = auditRepository.findById(auditId).orElse(null);
+    Audit audit = auditRepository.findByIdForUpdate(auditId).orElse(null);
     if (audit == null || audit.getStatus() == AuditStatus.COMPLETED || audit.getStatus() == AuditStatus.CANCELLED) return;
     audit.setStatus(AuditStatus.FAILED);
     audit.setCurrentStage("FAILED");
@@ -134,7 +134,7 @@ class AuditStateService {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void updateProgress(UUID auditId, AuditProgressUpdateRequest request) {
-    Audit audit = auditRepository.findById(auditId).orElse(null);
+    Audit audit = auditRepository.findByIdForUpdate(auditId).orElse(null);
     if (audit == null || isTerminal(audit.getStatus())) return;
     audit.setStatus(AuditStatus.RUNNING);
     if (audit.getStartedAt() == null) audit.setStartedAt(OffsetDateTime.now());

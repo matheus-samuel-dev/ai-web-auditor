@@ -56,6 +56,9 @@ describe("AuditReportPage", () => {
   });
 
   it("classifica métricas reais e mantém explicação legível", () => {
+    expect(describeLighthouseMetric("totalBlockingTime", "6,200 ms").rating?.label).toBe("Ruim");
+    expect(describeLighthouseMetric("largestContentfulPaint", "2,5 s").rating?.label).toBe("Bom");
+    expect(describeLighthouseMetric("cumulativeLayoutShift", "0,123").rating?.label).toBe("Precisa melhorar");
     expect(describeLighthouseMetric("largestContentfulPaint", "4.5 s")).toMatchObject({
       label: "Largest Contentful Paint (LCP)",
       rating: { label: "Ruim", tone: "poor" }

@@ -32,6 +32,10 @@ public class AuthService {
     validateBcryptLength(request.password());
     String email = request.email().trim().toLowerCase();
 
+    if (DemoAuthService.EMAIL.equals(email)) {
+      throw new ApiException(HttpStatus.CONFLICT, "Este email é reservado para demonstração.");
+    }
+
     if (userRepository.existsByEmail(email)) {
       throw new ApiException(HttpStatus.CONFLICT, "Já existe uma conta com este email.");
     }

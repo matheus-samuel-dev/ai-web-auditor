@@ -157,6 +157,7 @@ function normalizeConnectionError(error: unknown, fallback = "Não foi possível
 }
 
 export const authApi = {
+  demo: () => request<AuthResponse>("/auth/demo", { method: "POST" }),
   login: (email: string, password: string, options?: RequestInit) =>
     request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }), ...options }),
   register: (name: string, email: string, password: string, options?: RequestInit) =>
