@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) setUser(me);
       } catch {
         if (controller.signal.aborted) return;
+        if (!active || getStoredToken() !== token) return;
         setStoredToken(null);
         if (active) {
           setToken(null);

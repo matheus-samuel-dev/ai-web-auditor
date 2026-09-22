@@ -37,7 +37,7 @@ public class AuthService {
     }
 
     if (userRepository.existsByEmail(email)) {
-      throw new ApiException(HttpStatus.CONFLICT, "Já existe uma conta com este email.");
+      throw new ApiException(HttpStatus.CONFLICT, "Já existe uma conta com este e-mail.");
     }
 
     User user = new User();
@@ -53,10 +53,10 @@ public class AuthService {
   public AuthResponse login(LoginRequest request) {
     validateBcryptLength(request.password());
     User user = userRepository.findByEmail(request.email().trim().toLowerCase())
-        .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas."));
+        .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos."));
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-      throw new ApiException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas.");
+      throw new ApiException(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos.");
     }
 
     return authenticate(user);

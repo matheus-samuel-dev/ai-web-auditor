@@ -57,7 +57,7 @@ describe("projectApi contracts", () => {
 
     const expectation = expect(authApi.me()).rejects.toMatchObject({
       status: 408,
-      message: expect.stringContaining("demorou demais")
+      message: "A solicitação demorou mais que o esperado."
     });
     await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
     await expectation;
@@ -71,5 +71,47 @@ describe("projectApi contracts", () => {
     controller.abort();
 
     await expectation;
+  });
+
+  it("não envia sessão antiga no login, cadastro ou demo", async () => {
+    localStorage.setItem("ai-web-auditor-token", "expired-token");
+    await authApi.login("usuario@gmail.com", "12345678");
+    await authApi.register("Usuário", "usuario@gmail.com", "12345678");
+    await authApi.demo();
+    for (const [, options] of fetchMock.mock.calls) expect(options.headers.has("Authorization")).toBe(false);
+    await authApi.me();
+    expect(fetchMock.mock.calls.at(-1)?.[1].headers.get("Authorization")).toBe("Bearer expired-token");
+  });
+
+  it.each([
+    [401, {}, "E-mail ou senha inválidos."],
+    [409, {}, "Já existe uma conta com este e-mail."],
+    [400, { fieldErrors: { password: "A senha deve ter entre 8 e 72 caracteres." } }, "A senha deve ter entre 8 e 72 caracteres."],
+    [503, {}, "Não foi possível conectar ao servidor. Tente novamente em instantes."],
+    [500, {message:"internal diagnostic"}, "Não foi possível concluir a requisição."]
+  ])("trata HTTP %s na autenticação", async (status, payload, message) => {
+    fetchMock.mockResolvedValue({ ok:false, status, json:async()=>payload });
+    await expect(authApi.register("Usuário","usuario@gmail.com","12345678")).rejects.toMatchObject({status,message});
+  });
+
+  it("identifica resposta CORS em texto simples sem mascarar a causa", async () => {
+    fetchMock.mockResolvedValue(new Response("Invalid CORS request",{status:403}));
+    await expect(authApi.demo()).rejects.toThrow("O servidor recusou a origem deste site");
+  });
+
+  it("trata servidor inacessível", async () => {
+    fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(authApi.login("usuario@gmail.com","12345678")).rejects.toMatchObject({status:0,message:"Não foi possível conectar ao servidor. Tente novamente em instantes."});
+  });
+
+  it("resposta atrasada de sessão antiga não apaga um novo login", async () => {
+    localStorage.setItem("ai-web-auditor-token","old-token");
+    let complete!: (value: Response) => void;
+    fetchMock.mockImplementationOnce(()=>new Promise(resolve=>{complete=resolve;}));
+    const pending=expect(authApi.me()).rejects.toMatchObject({status:401});
+    localStorage.setItem("ai-web-auditor-token","new-token");
+    complete(new Response('{}',{status:401,headers:{'Content-Type':'application/json'}}));
+    await pending;
+    expect(localStorage.getItem("ai-web-auditor-token")).toBe("new-token");
   });
 });

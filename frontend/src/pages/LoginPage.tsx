@@ -1,10 +1,11 @@
 import { ShieldCheck, Sparkles } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { usePageMeta } from "../hooks/usePageMeta";
 import authStyles from "../styles/auth.module.css";
 import { EMAIL_ERROR, isValidEmail } from "../utils/email";
+import { passwordError } from "../utils/password";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const submitting = useRef(false);
 
   usePageMeta(
     "Login | AI Web Auditor",
@@ -26,7 +28,11 @@ export function LoginPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
     if (!isValidEmail(email)) { setError(EMAIL_ERROR); return; }
+    const invalidPassword = passwordError(password);
+    if (invalidPassword) { setError(invalidPassword); return; }
+    submitting.current = true;
     setLoading(true);
     setError("");
 
@@ -37,11 +43,14 @@ export function LoginPage() {
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível entrar.");
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
 
   async function handleDemo() {
+    if (submitting.current) return;
+    submitting.current = true;
     setLoading(true);
     setError("");
     try {
@@ -50,6 +59,7 @@ export function LoginPage() {
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível entrar como demo.");
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
@@ -95,10 +105,10 @@ export function LoginPage() {
 
           <label>
             Senha
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+            <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} maxLength={72} required />
           </label>
 
-          {error ? <div className="inlineError">{error}</div> : null}
+          {error ? <div className="inlineError" role="alert">{error}</div> : null}
 
           <button className="primaryButton" disabled={loading || !isValidEmail(email)} type="submit">
             {loading ? "Autenticando..." : "Entrar no painel"}

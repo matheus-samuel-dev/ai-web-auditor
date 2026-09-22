@@ -1,10 +1,11 @@
 import { ShieldCheck } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { usePageMeta } from "../hooks/usePageMeta";
 import authStyles from "../styles/auth.module.css";
 import { EMAIL_ERROR, isValidEmail } from "../utils/email";
+import { passwordError } from "../utils/password";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const submitting = useRef(false);
 
   usePageMeta(
     "Cadastro | AI Web Auditor",
@@ -26,7 +28,12 @@ export function RegisterPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting.current) return;
     if (!isValidEmail(email)) { setError(EMAIL_ERROR); return; }
+    const invalidPassword = passwordError(password, true);
+    if (invalidPassword) { setError(invalidPassword); return; }
+    if (!name.trim() || name.length < 2 || name.length > 120) { setError("O nome deve ter entre 2 e 120 caracteres."); return; }
+    submitting.current = true;
     setLoading(true);
     setError("");
 
@@ -36,6 +43,7 @@ export function RegisterPage() {
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível criar a conta.");
     } finally {
+      submitting.current = false;
       setLoading(false);
     }
   }
@@ -60,7 +68,7 @@ export function RegisterPage() {
 
           <label>
             Nome
-            <input type="text" value={name} onChange={(event) => setName(event.target.value)} required />
+            <input type="text" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={120} required />
           </label>
 
           <label>
@@ -72,10 +80,12 @@ export function RegisterPage() {
 
           <label>
             Senha
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} required />
+            <input type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} maxLength={72} aria-describedby="password-feedback" required />
           </label>
+          <p id="password-feedback">Use de 8 a 72 caracteres (até 72 bytes em UTF-8). Não há exigência de caracteres especiais.</p>
+          {password && passwordError(password, true) ? <div className="inlineError" role="alert">{passwordError(password, true)}</div> : null}
 
-          {error ? <div className="inlineError">{error}</div> : null}
+          {error ? <div className="inlineError" role="alert">{error}</div> : null}
 
           <button className="primaryButton" disabled={loading || !isValidEmail(email)} type="submit">
             {loading ? "Criando conta..." : "Criar e entrar"}

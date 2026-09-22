@@ -198,6 +198,14 @@ VITE_API_BASE_URL=http://localhost:8080/api
 
 File: [`backend/.env.example`](./backend/.env.example)
 
+For a Docker deployment, set `APP_FRONTEND_URL` in the root `.env` to the exact
+browser origin (scheme, hostname and port, without a path or trailing slash).
+For example, use `https://auditor.example.com` when serving the frontend over
+HTTPS. Compose defaults to `http://localhost:5175` for local development. Recreate
+the backend after changing this value. A wrong origin causes Spring Security to
+reject login, registration and demo requests with HTTP 403 (`Invalid CORS request`),
+even when authentication works through a client that sends no `Origin` header.
+
 ```env
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ai_web_auditor
 SPRING_DATASOURCE_USERNAME=ai_admin

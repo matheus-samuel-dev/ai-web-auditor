@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "../context/AuthContext";
 import { LoginPage } from "./LoginPage";
 import { RegisterPage } from "./RegisterPage";
 import { isValidEmail } from "../utils/email";
+import { passwordError } from "../utils/password";
 
 const api = vi.hoisted(() => ({ demo: vi.fn(), register: vi.fn(), login: vi.fn(), me: vi.fn() }));
 vi.mock("../api/client", () => ({
@@ -51,4 +52,44 @@ it("trata falha do demo sem deixar o botão preso", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Entrar como usuário demo" }));
   expect(await screen.findByText("Acesso demo indisponível.")).toBeVisible();
   expect(screen.getByRole("button", { name: "Entrar como usuário demo" })).toBeEnabled();
+});
+
+it.each(["E-mail ou senha inválidos.","Não foi possível conectar ao servidor. Tente novamente em instantes."])("login exibe %s e libera novo envio", async message => {
+  api.login.mockRejectedValue(new Error(message));
+  render(<MemoryRouter><AuthProvider><LoginPage /></AuthProvider></MemoryRouter>);
+  await userEvent.type(screen.getByLabelText("Email"),"usuario@gmail.com");
+  await userEvent.type(screen.getByLabelText("Senha"),"12345678");
+  await userEvent.click(screen.getByRole("button",{name:"Entrar no painel"}));
+  expect(await screen.findByRole("alert")).toHaveTextContent(message);
+  expect(screen.getByRole("button",{name:"Entrar no painel"})).toBeEnabled();
+  expect(api.login).toHaveBeenCalledWith("usuario@gmail.com","12345678");
+});
+
+it("cadastro válido cria sessão com o token emitido pelo backend", async () => {
+  api.register.mockResolvedValue({token:"registered-token",user:{id:"new",name:"Nova conta"}});
+  render(<MemoryRouter><AuthProvider><RegisterPage /></AuthProvider></MemoryRouter>);
+  await userEvent.type(screen.getByLabelText("Nome"),"Nova conta");
+  await userEvent.type(screen.getByLabelText("Email"),"nome.sobrenome@empresa.com.br");
+  await userEvent.type(screen.getByLabelText("Senha"),"12345678");
+  await userEvent.click(screen.getByRole("button",{name:"Criar e entrar"}));
+  await waitFor(()=>expect(localStorage.getItem("test-token")).toBe("registered-token"));
+});
+
+it("senha respeita tamanho e limite UTF-8 do BCrypt", () => {
+  expect(passwordError("12345678",true)).toBeNull();
+  expect(passwordError("1234567",true)).toContain("8 e 72");
+  expect(passwordError("é".repeat(37),true)).toContain("72 bytes");
+});
+
+it("sessão inválida no armazenamento não impede um novo login", async () => {
+  localStorage.setItem("test-token","expired");
+  api.me.mockRejectedValue(new Error("expired"));
+  api.login.mockResolvedValue({token:"fresh-token",user:{id:"existing",name:"Conta existente"}});
+  render(<MemoryRouter><AuthProvider><Session /></AuthProvider></MemoryRouter>);
+  await waitFor(()=>expect(localStorage.getItem("test-token")).toBeNull());
+  await userEvent.type(screen.getByLabelText("Email"),"usuario@gmail.com");
+  await userEvent.type(screen.getByLabelText("Senha"),"12345678");
+  await userEvent.click(screen.getByRole("button",{name:"Entrar no painel"}));
+  expect(await screen.findByText("Conta existente")).toBeVisible();
+  expect(localStorage.getItem("test-token")).toBe("fresh-token");
 });

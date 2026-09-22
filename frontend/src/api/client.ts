@@ -30,8 +30,10 @@ export function setStoredToken(token: string | null) {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getStoredToken();
+  const publicAuth = ["/auth/login", "/auth/register", "/auth/demo"].includes(path);
+  const token = publicAuth ? null : getStoredToken();
   const headers = new Headers(options.headers);
+  if (publicAuth) headers.delete("Authorization");
 
   if (options.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -46,11 +48,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       const response = await fetch(resolveApiUrl(path), { ...options, headers, signal });
 
       if (!response.ok) {
-        const payload = await safeJson(response);
-        const error = new Error(payload?.message || "Não foi possível concluir a requisição.") as ApiError;
+        const payload = await safeErrorPayload(response);
+        const fieldMessages = Object.values(payload?.fieldErrors || {}).filter(value => typeof value === "string");
+        const message = publicAuth && response.status === 401 ? "E-mail ou senha inválidos."
+          : path === "/auth/register" && response.status === 409 ? "Já existe uma conta com este e-mail."
+          : response.status === 400 && fieldMessages.length ? fieldMessages.join(" ")
+          : publicAuth && [502, 503, 504].includes(response.status) ? "Não foi possível conectar ao servidor. Tente novamente em instantes."
+          : publicAuth && response.status >= 500 ? "Não foi possível concluir a requisição."
+          : payload?.corsRejected ? "O servidor recusou a origem deste site. A configuração de acesso precisa ser corrigida."
+          : payload?.message || "Não foi possível concluir a requisição.";
+        const error = new Error(message) as ApiError;
         error.status = response.status;
         error.fieldErrors = payload?.fieldErrors;
-        if (response.status === 401 && token) {
+        if (response.status === 401 && token && getStoredToken() === token) {
           setStoredToken(null);
           window.dispatchEvent(new CustomEvent("aiwa:session-expired"));
         }
@@ -108,6 +118,15 @@ async function safeJson(response: Response) {
   }
 }
 
+async function safeErrorPayload(response: Response): Promise<{message?: string; fieldErrors?: Record<string, string>; corsRejected?: boolean} | null> {
+  // Spring's CORS filter returns plain text before controller exception handling.
+  if (response.headers?.get("content-type")?.includes("application/json")) return safeJson(response);
+  if (typeof response.text !== "function") return safeJson(response);
+  const body = await response.text();
+  if (body.trim() === "Invalid CORS request") return { corsRejected: true };
+  try { return JSON.parse(body); } catch { return null; }
+}
+
 async function runWithTimeout<T>(
   operation: (signal: AbortSignal) => Promise<T>,
   externalSignal: AbortSignal | null | undefined,
@@ -133,7 +152,7 @@ async function runWithTimeout<T>(
   }
 
   const timeoutId = globalThis.setTimeout(() => {
-    const error = new Error("O servidor demorou demais para responder. Tente novamente em instantes.") as ApiError;
+    const error = new Error("A solicitação demorou mais que o esperado.") as ApiError;
     error.status = 408;
     controller.abort(error);
     rejectCancellation(error);
@@ -147,7 +166,7 @@ async function runWithTimeout<T>(
   }
 }
 
-function normalizeConnectionError(error: unknown, fallback = "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.") {
+function normalizeConnectionError(error: unknown, fallback = "Não foi possível conectar ao servidor. Tente novamente em instantes.") {
   if (error instanceof Error && error.name === "AbortError") return error;
   if (error && typeof error === "object" && "name" in error && error.name === "AbortError") return error;
   if (error instanceof Error && "status" in error) return error;
